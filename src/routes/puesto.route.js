@@ -4,7 +4,7 @@ const { validarJWT } = require("../helpers/validar-jwt");
 
 const router = Router()
 
-router.get('/puesto', [validarJWT], getPuestos)
+router.get('/puesto/nivel/:id', [validarJWT], getPuestos)
 router.get('/puesto/:id', [validarJWT], getDataPuesto)
 router.post('/puesto', [validarJWT], createDataPuesto)
 
