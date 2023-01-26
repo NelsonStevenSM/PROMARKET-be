@@ -1,11 +1,13 @@
 const { pool } = require("../database/config.database");
 
 const getPuestos = async (req, res) => {
-    const {nivel} = req.params;
-    const standScript = 'SELECT * FROM "PUESTOS" WHERE nivel =' + nivel;
+    const { id } = req.params;
+    const standScript = 'SELECT * FROM "PUESTOS" WHERE nivel = $1';
+    const valueStand = []
+    valueStand.push(id)
 
     try {
-        const response = await pool.query(standScript);
+        const response = await pool.query(standScript, valueStand);
         res.status(200).json(response.rows)
     } catch (error) {
         console.log(error)
