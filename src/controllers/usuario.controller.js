@@ -68,11 +68,21 @@ const stateUsuario = async (req, res) => {
 const updateUsuario = async (req, res) => {
     usuario = req.body
     try {
-        const scriptUsuario = 'UPDATE "USUARIOS" SET nombre = $1, apaterno = $2, amaterno = $3, rol = $4, fecha_actualizacion = CURRENT_DATE, password = $5 WHERE dni = $6';
-        
-        let pwd = cryptr.encrypt(usuario.password);
 
-        const valueUsuario = [usuario.nombre, usuario.apaterno, usuario.amaterno, usuario.rol, pwd, usuario.dni]
+        if (usuario.dni !== usuario.dni_o) {
+            const scriptSearchSells = 'SELECT * FROM "CLIENTES" WHERE FK_USU_VENTA = $1';
+            const values = [usuario.dni_o] //dni_original
+            const rs = await pool.query(scriptSearchSells, values);
+
+            if (rs.rowCount >= 1) {
+                res.status(400).json({ "error": "El usuario ya ha realizado ventas, no se puede modificar el DNI" })
+            }
+        }
+
+        let pwd = cryptr.encrypt(usuario.password);
+        const scriptUsuario = 'UPDATE "USUARIOS" SET dni = $1, nombre = $2, apaterno = $3, amaterno = $4, rol = $5, fecha_actualizacion = CURRENT_DATE, password = $6 WHERE dni = $7';
+
+        const valueUsuario = [usuario.dni, usuario.nombre, usuario.apaterno, usuario.amaterno, usuario.rol, pwd, usuario.dni_o]
         const response = await pool.query(scriptUsuario, valueUsuario);
         res.status(200).json(response.rows[0])
     } catch (error) {
