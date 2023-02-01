@@ -283,8 +283,59 @@ const createDataPuesto = async (req, res) => {
     }
 }
 
+const reiniciarPuesto = async (req, res) => {
+    puesto = req.body
+
+    const deleteConyuge = 'DELETE FROM "CONYUGES" WHERE dni = $1'
+    const deleteFinanciamiento = 'DELETE FROM "FINANCIAMIENTOS" WHERE ID = $1'
+    const deleteCliente = 'DELETE FROM "CLIENTES" WHERE dni = $1;'
+    const updatePuesto = 'UPDATE "PUESTOS" SET estado=1, fk_cliente=null, fk_financiamiento=null WHERE id = $1;'
+
+    const valueConyuge = []
+    const valueFinanciamiento = []
+    const valueCliente = []
+    const valuePuesto = []
+    try {
+
+        //ACTUALIZAR PUESTO
+        valuePuesto.push(puesto.id)
+        const rsPuesto = await pool.query(updatePuesto, valuePuesto);
+        if (rsPuesto.rowCount !== 1) {
+            res.status(400).json({ "error": "Ocurrio un error al actualizar puesto" })
+        } else {
+            //ELIMINAR FINANCIAMIENTO
+            valueFinanciamiento.push(puesto.financiamiento_id)
+            const rsFinanciamiento = await pool.query(deleteFinanciamiento, valueFinanciamiento);
+
+            console.log("RESPONSE ELIMINAR FINANCIAMIENTO")
+            console.log(rsFinanciamiento)
+
+            //ELIMINAR CLIENTE
+            valueCliente.push(puesto.cliente_dni)
+            const rsCliente = await pool.query(deleteCliente, valueCliente);
+
+            console.log("RESPONSE ELIMINAR CLIENTE")
+            console.log(rsCliente)
+
+            if (puesto.conyuge_dni !== null && puesto.conyuge_dni !== undefined) {
+                //ELIMINAR CONYUGE
+                valueConyuge.push(puesto.conyuge_dni)
+                const response = await pool.query(deleteConyuge, valueConyuge);
+    
+                console.log("RESPONSE ELIMINAR CONYUGE")
+                console.log(response)
+            }
+    
+            res.status(200).json(rsPuesto.rowCount)
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 module.exports = {
     getPuestos,
     getDataPuesto,
-    createDataPuesto
+    createDataPuesto,
+    reiniciarPuesto
 }
