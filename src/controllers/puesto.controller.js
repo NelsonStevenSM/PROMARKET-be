@@ -271,7 +271,7 @@ const createDataPuesto = async (req, res) => {
         valuePuesto.push(comentario)
         valuePuesto.push(puesto_id)
         valuePuesto.splice(0, 1)
-        const responsePuestoUpdate = await pool.query(scriptUpdatePuesto, valuePuestoUpdate)
+        const responsePuestoUpdate = await pool.query(scriptUpdatePuesto, valuePuesto)
 
         if (responsePuestoUpdate.rowCount !== 1) {
             res.status(400).json({ "error": "Ocurrio un error al actualizar puesto" })
