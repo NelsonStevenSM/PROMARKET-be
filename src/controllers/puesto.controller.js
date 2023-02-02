@@ -333,9 +333,96 @@ const reiniciarPuesto = async (req, res) => {
     }
 }
 
+const getPuestosByFilter = async (req, res) => {
+    puesto = req.body
+
+    const searchPuesto = 'SELECT * FROM "PUESTOS" WHERE NRO_PROYECTO = $1 AND NIVEL = $2 AND ID LIKE $3 ORDER BY ID ASC'
+    const valuePuesto = []
+    try {
+
+        //BUSCAR PUESTO
+        valuePuesto.push(puesto.nro_proyecto)
+        valuePuesto.push(puesto.nivel)
+        valuePuesto.push(puesto.id)
+        const rsPuesto = await pool.query(searchPuesto, valuePuesto);
+
+        console.log(rsPuesto)
+
+        if (rsPuesto.rowCount === 0) {
+            res.status(400).json({ "error": "No se encontraron datos" })
+        } else {
+            res.status(200).json(rsPuesto.rows)
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+const updatePuesto = async (req, res) => {
+    puesto = req.body
+
+    const searchPuesto = 'SELECT * FROM "PUESTOS" WHERE ID = $1'
+    const scriptSearchFinanciamiento = 'SELECT * FROM "FINANCIAMIENTOS" WHERE ID = $1'
+
+    const scriptUpdateFinanciamiento = 'UPDATE "FINANCIAMIENTOS" SET financiamiento = $1 WHERE id = $2;'
+    const scriptUpdatePuesto = 'UPDATE "PUESTOS" SET ancho = $1, largo = $2, previo_venta = $3 WHERE id = $4'
+
+    const valuePuesto = []
+    const valueFinanciamiento = []
+    try {
+
+        //BUSCAR PUESTO
+        valuePuesto.push(puesto.id)
+        const rsPuesto = await pool.query(searchPuesto, valuePuesto);
+        if (rsPuesto.rowCount !== 1) {
+            res.status(400).json({ "error": "Ocurrio un error al actualizar puesto" })
+        } else {
+            let financiamiento_id = rsPuesto.rows[0].fk_financiamiento
+
+            if (financiamiento_id !== null && financiamiento_id !== undefined) {
+                //BUSCAR FINANCIAMIENTO
+                valueFinanciamiento.push(financiamiento_id)
+                const rsFinancia = await pool.query(scriptSearchFinanciamiento, valueFinanciamiento)
+
+                let imp_separacion = rsFinancia.rows[0].imp_separacion
+                let saldo_inicial = rsFinancia.rows[0].saldo_inicial
+                let financiamiento = puesto.previo_venta - imp_separacion - saldo_inicial
+
+                //ACTUALIZAMOS FINANCIAMIENTO
+                valueFinanciamiento.push(financiamiento)
+                valueFinanciamiento.push(financiamiento_id)
+                valueFinanciamiento.splice(0, 1)
+                const rsUpdtFinancia = await pool.query(scriptUpdateFinanciamiento, valueFinanciamiento)
+
+                if (rsUpdtFinancia.rowCount !== 1) {
+                    res.status(400).json({ "error": "Ocurrio un error al actualizar financiamiento" })
+                }
+            }
+
+            //ACTUALIZAR PUESTO
+            valuePuesto.push(puesto.ancho)
+            valuePuesto.push(puesto.largo)
+            valuePuesto.push(puesto.previo_venta)
+            valuePuesto.push(puesto.id)
+            valuePuesto.splice(0, 1)
+            const rsUpdtPuesto = await pool.query(scriptUpdatePuesto, valuePuesto);
+
+            if (rsUpdtPuesto.rowCount !== 1) {
+                res.status(400).json({ "error": "Ocurrio un error al actualizar puesto" })
+            } else {
+                res.status(200).json(rsUpdtPuesto.rowCount)
+            }
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 module.exports = {
     getPuestos,
     getDataPuesto,
     createDataPuesto,
-    reiniciarPuesto
+    reiniciarPuesto,
+    getPuestosByFilter, 
+    updatePuesto
 }
